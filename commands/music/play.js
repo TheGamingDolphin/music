@@ -13,7 +13,7 @@ Object.keys(songs).forEach((song) => {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("play")
-    .setDescription("Play a song!")
+    .setDescription("Add a song to the queue!")
     .addStringOption((option) =>
       option
         .setName("song")
@@ -29,7 +29,10 @@ module.exports = {
         ephemeral: true,
       });
     } else {
-      await interaction.reply({ content: "Now playing!", ephemeral: true });
+      await interaction.reply({
+        content: `Added ${interaction.options.getString("song")} to queue!`,
+        ephemeral: true,
+      });
     }
   },
 };

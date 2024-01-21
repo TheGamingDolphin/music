@@ -75,12 +75,68 @@ client.on("interactionCreate", async (interaction) => {
     } catch (error) {
       console.log(error);
     }
+  } else if (interaction.commandName === "playall") {
+    const shuffleOption = interaction.options.getBoolean("shuffle") || false;
+    // Queue all songs from the JSON file
+    const voiceChannel = interaction.member.voice.channel;
+    try {
+      const songList = shuffleOption
+        ? shuffle(Object.keys(songs))
+        : Object.keys(songs);
 
-    client.DisTube.on("playSong", (queue, song) => {
-      queue.textChannel.send("Now playing: " + song.name);
-    });
+      for (const songName of songList) {
+        const url = songs[songName];
+        await client.DisTube.play(voiceChannel, url, {
+          member: interaction.member,
+          textChannel: interaction.channel,
+          interaction,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  } else if (interaction.commandName === "skip") {
+    const voiceChannel = interaction.member.voice.channel;
+    const queue = client.DisTube.getQueue(interaction.guildId);
+
+    if (!queue || !queue.songs.length) {
+      return interaction.reply("There are no songs in the queue to skip.");
+    }
+
+    try {
+      client.DisTube.skip(voiceChannel);
+      interaction.channel.send(
+        `${interaction.user.displayName} skipped the current track`
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  } else if (interaction.commandName === "stop") {
+    const botMember = interaction.guild.members.cache.get(client.user.id);
+    try {
+      client.DisTube.stop(interaction.guildId); // Stop playback and clear the queue for the current guild
+      botMember.voice.disconnect(); // Leave the voice channel after stopping the playback and clearing the queue
+      interaction.channel.send(
+        `${interaction.user.displayName} stopped the music.`
+      );
+    } catch (error) {
+      console.log(error);
+    }
   }
 });
+client.DisTube.on("playSong", (queue, song) => {
+  const songName = Object.keys(songs).find((key) => songs[key] === song.url);
+  const queuedBy = queue.songs[0].user.displayName;
+  queue.textChannel.send(`Now playing: ${songName}\nQueued by: ${queuedBy}`);
+});
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
 //crash prevention
 process.on("unhandledRejection", async (reason, promise) => {
