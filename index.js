@@ -9,7 +9,9 @@ const {
 const path = require("node:path");
 const fs = require("node:fs");
 
-const { DisTube } = require("distube");
+const { DisTube, RepeatMode } = require("distube");
+
+let repeatMode = RepeatMode.DISABLED; // Initialize repeat mode as disabled
 
 // create client with necessary intents
 const client = new Client({
@@ -118,6 +120,28 @@ client.on("interactionCreate", async (interaction) => {
       botMember.voice.disconnect(); // Leave the voice channel after stopping the playback and clearing the queue
       interaction.channel.send(
         `${interaction.user.displayName} stopped the music.`
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  } else if (interaction.commandName === "loop") {
+    const queue = client.DisTube.getQueue(interaction.guildId);
+    if (!queue || !queue.songs.length) {
+      return interaction.reply("There are no songs in the queue to loop.");
+    }
+
+    try {
+      // Toggle repeat mode
+      repeatMode =
+        repeatMode === RepeatMode.DISABLED
+          ? RepeatMode.SONG
+          : RepeatMode.DISABLED;
+      queue.setRepeatMode(repeatMode); // Set the repeat mode for the queue
+
+      interaction.channel.send(
+        `Loop mode was ${
+          repeatMode === RepeatMode.SONG ? "enabled" : "disabled"
+        } by ${interaction.user.displayName}`
       );
     } catch (error) {
       console.log(error);
